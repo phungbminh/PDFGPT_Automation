@@ -1,0 +1,10 @@
+python-dotenv==1.0.0
+pywin32==306
+pyzmq==25.1.1
+requests==2.31.0
+selenium==4.9.0
+webdriver-manager==4.0.1
+pyperclip==1.9.0
+PyAutoIt==0.6.5
+pandas
+openpyxl
