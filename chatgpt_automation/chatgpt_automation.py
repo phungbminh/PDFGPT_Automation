@@ -460,7 +460,7 @@ class ChatGPTAutomation:
             # Lấy nội dung tin nhắn
 
             message_content = message.find_element(By.CLASS_NAME, "markdown-content").text
-            print(f'message_content: {message_content}')
+            #print(f'message_content: {message_content}')
             # Kiểm tra xem nội dung có chứa thông tin cần thiết không
             if "Here is the extracted information:" in message_content:
                 # Sử dụng regex để trích xuất thông tin

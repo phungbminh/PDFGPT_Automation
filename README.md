@@ -20,5 +20,5 @@
     ```
  3. Run main
     ```bash
-    python main.py --folder-input=path --folder-output=path --chrome-path=path --chrome-driver=path
+    python main.py --folder-input=E:\Data\TopCV --folder-output=E:\ --chrome-path=E:\Software\chrome-win64\chrome.exe --chrome-driver=E:\Software\chromedriver-win64\chromedriver.exe
     ```

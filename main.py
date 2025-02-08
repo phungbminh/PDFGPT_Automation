@@ -69,6 +69,7 @@ def main():
 
             except Exception as e:
                 shutil.move(full_path, os.path.join(error_path, filename))
+                chat_bot.open_new_chat()
                 print(f"Có lỗi xảy ra với file {filename}: {e}. File đã được di chuyển đến thư mục error.")
 
             # In ra danh sách kết quả
