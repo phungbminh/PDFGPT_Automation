@@ -15,6 +15,7 @@ question = """Hãy trích xuất thông tin:
 - Số điện thoại
 - Email
 - Địa chỉ
+không lấy thêm thông tin nào khác
 """
 import pandas as pd
 
@@ -32,7 +33,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     # Arguments users used when running command lines
-    parser.add_argument('--folder-input', type=str, default="E:\\Data\\TopCV2", help='Where input data is located')
+    parser.add_argument('--folder-input', type=str, default="E:\\Data\\TopCV", help='Where input data is located')
     parser.add_argument('--folder-output', default='E:\\Data', type=str,  help='Where output data is located')
     parser.add_argument('--chrome-path', default='E:\\Software\\chrome-win64\\chrome.exe', type=str, help='Where chrome application is located')
     parser.add_argument('--chrome-driver', default='E:\\Software\\chromedriver-win64\\chromedriver.exe', type=str, help='Where chrome driver is located ')
@@ -51,29 +52,7 @@ def main():
         chrome_path=args.chrome_path,
         chrome_driver_path=args.chrome_driver,
     )
-    for filename in os.listdir(folder_path):
-        if filename.lower().endswith('.pdf'):
-            # Tạo đường dẫn đầy đủ đến file
-            full_path = os.path.join(folder_path, filename)
-            print(f"Đang xử lý file: {full_path}")
 
-            try:
-                chat_bot.upload_file_for_prompt(full_path)
-                chat_bot.send_prompt_to_chatgpt(question)
-                json_data = chat_bot.get_conversation()
-                print(json_data)
-                combined_list.append(json_data)
-                shutil.move(full_path, os.path.join(backup_path, filename))
-                print(f"File đã được di chuyển đến thư mục backup: {filename}")
-                chat_bot.open_new_chat()
-
-            except Exception as e:
-                shutil.move(full_path, os.path.join(error_path, filename))
-                chat_bot.open_new_chat()
-                print(f"Có lỗi xảy ra với file {filename}: {e}. File đã được di chuyển đến thư mục error.")
-
-            # In ra danh sách kết quả
-    print(combined_list)
 
     current_time = datetime.now()
 
@@ -88,7 +67,36 @@ def main():
     current_time = current_time.replace("-", "_")
     current_time = current_time.replace(":", "_")
     current_time = current_time.replace("+", "_")
-    save_to_excel(combined_list, args.folder_input + "\\output_" +current_time+ ".xlsx")
+
+
+    for filename in os.listdir(folder_path):
+        if filename.lower().endswith('.pdf'):
+            # Tạo đường dẫn đầy đủ đến file
+            full_path = os.path.join(folder_path, filename)
+            print(f"Đang xử lý file: {full_path}")
+
+            try:
+                chat_bot.upload_file_for_prompt(full_path)
+                chat_bot.send_prompt_to_chatgpt(question)
+                json_data = chat_bot.get_conversation()
+                print(json_data)
+                if json_data:
+                    combined_list.append(json_data)
+                    save_to_excel(combined_list, args.folder_input + "\\output_" + current_time + ".xlsx")
+                shutil.move(full_path, os.path.join(backup_path, filename))
+                print(f"File đã được di chuyển đến thư mục backup: {filename}")
+
+                chat_bot.open_new_chat()
+
+            except Exception as e:
+                print(f"Có lỗi xảy ra với file {filename}: {e}. File đã được di chuyển đến thư mục error.")
+                shutil.move(full_path, os.path.join(error_path, filename))
+                chat_bot.open_new_chat()
+
+
+            # In ra danh sách kết quả
+    print(combined_list)
+
     # Đóng chat bot
     chat_bot.quit()
 

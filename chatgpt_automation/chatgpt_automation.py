@@ -79,10 +79,10 @@ class ChatGPTLocators:
 class ChatGPTAutomation:
     class DelayTimes:
         CONSTRUCTOR_DELAY = 6
-        SEND_PROMPT_DELAY = 20
-        UPLOAD_FILE_DELAY = 10
+        SEND_PROMPT_DELAY = 10
+        UPLOAD_FILE_DELAY = 5
         RETURN_LAST_RESPONSE_DELAY = 2
-        OPEN_NEW_CHAT_DELAY = 10
+        OPEN_NEW_CHAT_DELAY = 5
         DEL_CURRENT_CHAT_OPEN_MENU_DELAY = 3
         DEL_CURRENT_CHAT_AFTER_DELETE_DELAY = 5
         DEL_CURRENT_CHAT_BEFORE_OPEN_NEW_CHAT_DELAY = 5
@@ -300,6 +300,37 @@ class ChatGPTAutomation:
             # Raising a WebDriverException to indicate failure in WebDriver setup
             raise WebDriverException(f"Error initializing WebDriver: {e}")
 
+    def wait_for_loading_to_start(self):
+        start_time = time.time()
+
+        while True:
+            try:
+                loading_element = self.driver.find_element(By.XPATH,
+                                                      "//div[contains(@class, 'relative') and contains(@class, 'bg-blue-200')]")
+                if loading_element.is_displayed():
+                    return loading_element
+            except Exception:
+                pass
+
+
+            time.sleep(1)
+
+
+    def wait_for_text_to_appear(self, text):
+        print(f'Waiting process pdf...')
+        start_time = time.time()
+
+        while True:
+            try:
+                element = self.driver.find_element(By.XPATH, f"//*[contains(text(), '{text}')]")
+
+                if element.is_displayed():
+                    print("==> Done")
+                    return element
+            except Exception:
+                pass
+            time.sleep(1)
+
     def send_prompt_to_chatgpt(self, prompt):
         """
         Sends a message to ChatGPT via the web interface and waits for a response. This function
@@ -311,33 +342,19 @@ class ChatGPTAutomation:
         Raises:
             WebDriverException: If there is an issue interacting with the web elements or sending the prompt.
         """
+        loading_element = self.wait_for_loading_to_start()
+        if loading_element:
+            element = self.wait_for_text_to_appear("Hey there!")
+
         try:
-            # Locate the input box element on the webpage
-            # Giả sử bạn đã có driver
-            #self.driver.execute_script("document.querySelector('textarea[placeholder=\"Message ChatGPT\"]').style.display = 'block';")
-
             input_box = self.driver.find_element(*ChatGPTLocators.MSG_BOX_INPUT)
-
-            # prompt_textarea = WebDriverWait(self.driver, 10).until(
-            #     EC.element_to_be_clickable((By.ID, "prompt-textarea"))
-            # )
-            # Nhấp vào div để kích hoạt
-            #prompt_textarea.click()
-
-            # Gửi văn bản vào thẻ <p> bên trong div
-            # Sử dụng JavaScript để gửi văn bản vào thẻ <p>
-            #self.driver.execute_script("arguments[0].innerText = '" + prompt+"';", prompt_textarea)
 
             input_box.click()
             self.type_in_selected_area(prompt, input_box)
+            time.sleep(5)
             # Simulate the key press action to send the prompt
             input_box.send_keys(Keys.ENTER)
-            #prompt_textarea.send_keys(Keys.ENTER)
-            # Locate and click the send button to submit the prompt
-            # old code for send message now press enter for send msg
-            # send_button = self.driver.find_element(*ChatGPTLocators.SEND_MSG_BTN)
-            # send_button.click()
-            # Wait for the response to be generated (20 seconds)
+
             time.sleep(self.DelayTimes.SEND_PROMPT_DELAY)
         except NoSuchElementException:
             if self.check_message_sent():
@@ -349,7 +366,7 @@ class ChatGPTAutomation:
             # Log the exception if any step in the process fails
             logging.error(f"Failed to send prompt to ChatGPT: {e}")
             # Raising a WebDriverException to indicate failure in sending the prompt
-            raise WebDriverException(f"Error sending prompt to ChatGPT: {e}")
+            #raise WebDriverException(f"Error sending prompt to ChatGPT: {e}")
 
     def upload_file_for_prompt(self, file_name, retry_count=1):
         """
@@ -392,51 +409,44 @@ class ChatGPTAutomation:
                 raise e
             time.sleep(self.DelayTimes.UPLOAD_FILE_DELAY)
 
+        def wait_for_ok_button():
+            timeout = 5
+            start_time = time.time()
+            while True:
+                try:
+                    ok_button = WebDriverWait(self.driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, '//button[text()="OK"]'))
+                    )
+                    ok_button.click()
+                    break
+
+                except Exception as e:
+                    elapsed_time = time.time() - start_time
+                    if elapsed_time > timeout:
+                        break
+                    time.sleep(1)
+
         check_file_exists(file_name)
 
 
         for attempt in range(1, retry_count + 1):
-            # try:
-            #     logging.info(f"Attempt {attempt} to upload file.")
-            #     perform_file_upload(file_name)
-            #     time.sleep(self.DelayTimes.UPLOAD_FILE_DELAY)
-            #
-            #     # verify_upload(file_name.split('\\')[-1])
-            #     logging.info("File upload successful.")
-            #
-            #     return  # Exit the function if the upload is successful
-            # except WebDriverException as e:
-            #     logging.error(f"Upload attempt {attempt} failed: {e}")
-            #     if attempt == retry_count:
-            #         logging.error("All retry attempts failed.")
-            #         raise WebDriverException(f"All retry attempts failed: {e}")
             logging.info(f"Attempt {attempt} to upload file.")
             print(f"Attempt {attempt} to upload file.")
             perform_file_upload(file_name)
             time.sleep(self.DelayTimes.UPLOAD_FILE_DELAY)
             print('Verify upload')
             if not self.check_upload_success(file_name):
-                print('Retry upload')
-                self.open_new_chat()
-                perform_file_upload(file_name)
+                print('Click Cancle')
+                cancel_button = self.driver.find_element(By.XPATH, "//button[contains(@class, 'button_cancel')]")
+                cancel_button.click()
                 time.sleep(self.DelayTimes.UPLOAD_FILE_DELAY)
+                print('Re-Upload')
+                perform_file_upload(file_name)
 
             logging.info("File upload successful.")
             print("File upload successful.")
 
-
-        try:
-            print('chow nut ok')
-            # Chờ cho nút OK có thể tương tác
-            ok_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, '//button[text()="OK"]'))
-            )
-            print('ok')
-            # Nhấp vào nút OK
-            ok_button.click()
-
-        except Exception as e:
-            print(e)
+        wait_for_ok_button()
 
 
 
@@ -451,17 +461,15 @@ class ChatGPTAutomation:
         return chat_texts
         
     def get_conversation(self):
-
+        time.sleep(1)
         #chat_messages = self.driver.find_elements(*ChatGPTLocators.CHAT_GPT_CONVERSION)
         # Tìm tất cả các tin nhắn bot
         bot_messages = self.driver.find_elements(By.CLASS_NAME, "bot_message")
-        extracted_info = []
+        info = []
         for message in bot_messages:
-            # Lấy nội dung tin nhắn
-
             message_content = message.find_element(By.CLASS_NAME, "markdown-content").text
             #print(f'message_content: {message_content}')
-            # Kiểm tra xem nội dung có chứa thông tin cần thiết không
+
             if "Here is the extracted information:" in message_content:
                 # Sử dụng regex để trích xuất thông tin
                 info = {
@@ -473,7 +481,7 @@ class ChatGPTAutomation:
                     "Address": None
                 }
 
-                # Tìm kiếm từng thông tin
+
                 info["Full Name"] = re.search(r'Full Name: (.+)', message_content).group(1) if re.search(r'Full Name: (.+)',
                                                                                                          message_content) else None
                 info["Date of Birth"] = re.search(r'Date of Birth: (.+)', message_content).group(1) if re.search(
@@ -487,9 +495,6 @@ class ChatGPTAutomation:
                 info["Address"] = re.search(r'Address: (.+)', message_content).group(1) if re.search(r'Address: (.+)',
                                                                                                      message_content) else None
 
-                #extracted_info.append(info)
-
-            # Chuyển đổi dữ liệu thành DataFrame
         return info
 
     def return_last_response(self):
@@ -817,26 +822,7 @@ class ChatGPTAutomation:
 
         return None
 
-    # def check_verify_page(self):
-    #     try:
-    #         element = self.driver.find_element(By.XPATH, f'//*[contains(text(), "Verify you are human")]')
-    #         return True
-    #     except NoSuchElementException:
-    #         return False
-    #     except Exception as e:
-    #         logging.error(f"unexpected error: {e}")
-    #         raise Exception(e)
 
-    # def pass_verify(self):
-    #     try:
-    #         checkbox = driver.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]')
-    #         if not checkbox.is_selected():
-    #             checkbox.click()
-            
-    #         time.sleep(15)
-    #     except NoSuchElementException:
-    #         logging.error("Check Box for human verify doesn't find!")
-    #         raise Exception("Check Box for human verify doesn't find!")
         
     def quit(self):
         """
@@ -963,14 +949,23 @@ class ChatGPTAutomation:
         return True
 
     def check_upload_success(self, file_name):
-        # try:
-        #     self.driver.find_element(By.XPATH, f"//div[text()='{file_name}']")
-        # except NoSuchElementException:
-        #     return False
-        # error_message = WebDriverWait(self.driver, 10).until(
-        #     EC.presence_of_element_located((By.XPATH, "//span[contains(text(), 'Upload fail')]"))
-        # )
-        # if error_message.is_displayed():
-        #     return False
-        return True
+
+
+        return self.verify_upload()
+
+    def verify_upload(self):
+        time.sleep(5)
+        try:
+            error_message = self.driver.find_element(By.XPATH, "//span[text()='Upload Failed']")
+            if error_message:
+                print("Upload failed. Cancelling...")
+                return False
+            else:
+                print("Upload successful. Proceeding to the next step...")
+                return True
+        except Exception as e:
+            print("Upload successful. Proceeding to the next step...")
+            return True
+
+
     
