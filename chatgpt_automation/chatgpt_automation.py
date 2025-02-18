@@ -319,7 +319,7 @@ class ChatGPTAutomation:
     def wait_for_text_to_appear(self, text):
         print(f'Waiting process pdf...')
         start_time = time.time()
-
+        timeout=60
         while True:
             try:
                 element = self.driver.find_element(By.XPATH, f"//*[contains(text(), '{text}')]")
@@ -329,6 +329,11 @@ class ChatGPTAutomation:
                     return element
             except Exception:
                 pass
+
+            elapsed_time = time.time() - start_time
+            if elapsed_time > timeout:
+                print("<> Timeout")
+                return None
             time.sleep(1)
 
     def send_prompt_to_chatgpt(self, prompt):
@@ -342,9 +347,7 @@ class ChatGPTAutomation:
         Raises:
             WebDriverException: If there is an issue interacting with the web elements or sending the prompt.
         """
-        loading_element = self.wait_for_loading_to_start()
-        if loading_element:
-            element = self.wait_for_text_to_appear("Hey there!")
+
 
         try:
             input_box = self.driver.find_element(*ChatGPTLocators.MSG_BOX_INPUT)
@@ -447,6 +450,14 @@ class ChatGPTAutomation:
             print("File upload successful.")
 
         wait_for_ok_button()
+
+        loading_element = self.wait_for_loading_to_start()
+        if loading_element:
+            element = self.wait_for_text_to_appear("Hey there!")
+            if element is None:
+                self.open_new_chat()
+                print("Wait timeout -> re-try")
+                perform_file_upload(file_name)
 
 
 
@@ -629,7 +640,7 @@ class ChatGPTAutomation:
             # Log the exception if navigation fails
             logging.error(f"Failed to open new chat: {e}")
             # Raising a WebDriverException to indicate failure in navigation
-            raise WebDriverException(f"Error opening new chat: {e}")
+            #raise WebDriverException(f"Error opening new chat: {e}")
 
     def del_current_chat(self):
         """
