@@ -8,14 +8,17 @@ from chatgpt_automation.chatgpt_automation import ChatGPTAutomation
 
 
 
-question = """Hãy trích xuất thông tin:  
-- Họ tên
-- Ngày sinh
-- Giới tính  
-- Số điện thoại
-- Email
-- Địa chỉ
-không lấy thêm thông tin nào khác
+question = """
+Let's extract the information:  
+- Full name:
+- Date of birth:
+- Gender:
+- Phone number:
+- Email:
+- Address:
+Requirements:
+- No other information was obtained
+- Use English
 """
 import pandas as pd
 
